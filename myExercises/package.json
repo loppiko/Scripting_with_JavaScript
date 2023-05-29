@@ -1,0 +1,16 @@
+{
+  "name": "reduce",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "devDependencies": {
+    "eslint": "^8.41.0",
+    "nodemon": "^2.0.22"
+  },
+  "scripts": {
+    "1_red": "nodemon src/reduce/1_red.js",
+    "2_red": "nodemon src/reduce/2_red.js",
+    "3_red": "nodemon src/reduce/3_red.js",
+    "eslint": "eslint '**/*.js'"
+  }
+}
