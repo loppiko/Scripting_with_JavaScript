@@ -14,6 +14,7 @@
     "1_obj": "nodemon src/objects/1_obj.js",
     "2_obj": "nodemon src/objects/2_obj.js",
     "3_obj": "nodemon src/objects/3_obj.js",
+    "test": "nodemon src/objects/test.js",
     "eslint": "eslint '**/*.js'"
   },
   "dependencies": {

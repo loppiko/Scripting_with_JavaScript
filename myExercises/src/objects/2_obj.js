@@ -100,14 +100,13 @@
 
 
 const _ = require('lodash');
-
 const ships = [];
 
 class Tile {
     constructor(x, y, type) {
         this.x = x;
         this.y = y;
-        this.type = type; // [1, 1, LAND]
+        this.type = (type === "LAND" || type === "ICE" || type === "WATER") ? type : "WATER";
     }
 
     getTileInfo() {
@@ -115,57 +114,50 @@ class Tile {
     }
   }
 
-  class Grid {
-    constructor(height, width) {
-        this.height = height;
-        this.width = width;
-        this.ships = [];
+class Grid {
+    constructor() {
         this.grid = [];
     }
 
-    generate() {
+    generate(height, width) {
         const types = ["LAND", "WATER", "ICE"];
-        const creatingGrid = (grid = []) => {
-            if (grid.length >= this.height) return grid;
-            const myRow = (row = []) => {
-                if (row.length >= this.width) return row;
-                else return myRow([...row, new Tile(row.length + 1, grid.length + 1, types[Math.floor(Math.random() * types.length)])]);
-            };
-            return creatingGrid([...grid, myRow()]);
-        };
-        this.grid = creatingGrid();
-        return this.grid;
+        const rowGen = (width, row = []) => (row.length === width) ? row : rowGen(width, [...row, new Tile(width + 1, height + 1, types[Math.floor(Math.random() * types.length)])]);
+        this.grid.push(rowGen(width));
+        if (this.grid.length < height) this.generate(height, width);
     }
 
-    generatePredefined(predefTiles) {
-        this.grid = this.generate();
-        const addingPredefTiles = (predefTiles) => {
-            if (predefTiles.length === 0) return;
-            this.grid[_.head(predefTiles).y - 1][_.head(predefTiles).x - 1] = _.head(predefTiles);
-            return addingPredefTiles(_.tail(predefTiles));
-        };
-        addingPredefTiles(predefTiles);
+    generatePredefined(height, width, predefTiles) {
+        this.grid = this.generate(height, width);
+        predefTiles.forEach(tile => this.grid[tile.y - 1][tile.x - 1] = tile);
         return this.grid;
     }
 
     getTile(x, y) {
-        if (this.grid[y - 1][x - 1] === undefined) return null;
-        else return this.grid[y - 1][x - 1];
+        return (this.grid[y - 1][x - 1] === undefined) ? null : this.grid[y - 1][x - 1];
     }
 
-  } // obj.
+    printGrid() {
+        const tempGrid = [...this.grid];
+        ships.reduce((_, curr) => tempGrid[curr.y][curr.x] = curr, []);
+        return this.grid.map((row) => row.reduce((acc, elem) => {
+            if (elem.type === undefined) return [...acc, elem.direction];
+            else if (elem.type === "WATER") return [...acc, "~"];
+            else if (elem.type === "ICE") return [...acc, "x"];
+            else return [...acc, "o"];
+        }, []).join(" ")).join("\n");
+    }
+}
 
 class Ship {
     constructor(x, y, direction, myGrid, name) {
         this.name = name;
-        this.x = x;
-        this.y = y;
+        this.x = x - 1;
+        this.y = y - 1;
         this.direction = direction;
         this.grid = myGrid;
-        this.exist = false;
-        if (myGrid[y - 1][x - 1].type === "WATER") this.exist = true;
-        else console.log(`${name} nie może pojawić się na tym polu !`);
-        if (this.exist) this.ships = ships.push(this);
+        this.exist = (myGrid[this.y][this.x].type === "WATER") ? true : false;
+        if (!this.exist) console.log(`Ship ${name} can't appear on tile: ${myGrid[this.y][this.x].type}`);
+        else ships.push(this);
     }
 
     turn(side) {
@@ -185,24 +177,22 @@ class Ship {
 
     sail() {
         if (!this.exist) return;
+        const iceBreaker = (this instanceof Ship) ? false : true;
         const poleChecking = (x, y) => {
-            if (y - 1 < 0 || y - 1 >= this.grid.length || x - 1 < 0 || x - 1 >= this.grid[0].length) {
-                console.log(`${this.name} pozostał w miejscu, ponieważ znalazłby się poza planszą`);
-            } else if (this.grid[y - 1][x - 1].type !== "WATER") {
-                console.log(`${this.name} pozostał w miejscu, ponieważ trafił na pole, na które nie może wpłynąć (${this.grid[y - 1][x - 1].type})`);
-            } else if (ships.some((elem) => elem.x === x && elem.y === y && elem !== this)) {
-                console.log(`${this.name} pozostał w miejscu, ponieważ wpłynąłby na inny statek`);
-            } else {
-                console.log(`${this.name} się poruszył`);
+            if (y < 0 || y >= this.grid.length || x < 0 || x >= this.grid[0].length) console.log(`${this.name} didn't move because it would have floated off the board`);
+            else if ((this.grid[y][x].type !== "WATER" && !iceBreaker) || (this.grid[y][x].type === "LAND" && iceBreaker)) console.log(`${this.name} didn't move because it landed on a space it couldn't swim to (${this.grid[y][x].type})`);
+            else if (ships.some((elem) => elem.x === x && elem.y === y && elem !== this)) console.log(`${this.name} didn't move because it would have hit another ship`);
+            else {
+                console.log(`${this.name} has moved`);
                 this.x = x;
                 this.y = y;
             }
         };
 
-        if (this.direction === "N") poleChecking(this.x, this.y - 1);
-        else if (this.direction === "E") poleChecking(this.x + 1, this.y);
-        else if (this.direction === "S") poleChecking(this.x, this.y + 1);
-        else poleChecking(this.x - 1, this.y);
+        if (this.direction === "N") poleChecking(this.x, this.y + 1);
+        else if (this.direction === "E") poleChecking(this.x - 1, this.y);
+        else if (this.direction === "S") poleChecking(this.x, this.y - 1);
+        else poleChecking(this.x + 1, this.y);
     }
 
     getShipInfo() {
@@ -212,67 +202,49 @@ class Ship {
 }
 
 class IcebreakerShip extends Ship {
-    constructor(x, y, grid, name) {
-        super(x, y, "N", grid, name);
-        if (grid[y - 1][x - 1].type !== "LAND") this.exist = true;
-        // else console.log(`${name} nie może pojawić się na tym polu !`);
-        if (this.exist) this.ships = ships.push(this);
+    constructor(x, y, myGrid, name) {
+        super(x - 1, y - 1, "N", myGrid, name);
+        this.exist = (myGrid[this.y][this.x].type !== "LAND") ? true : false;
+        if (!this.exist) console.log(`Ship ${name} can't appear on tile: ${myGrid[this.y][this.x].type}`);
+        else ships.push(this);
     }
 
     turn() {
         if (!this.exist) return;
-        if (this.direction === "N") this.direction = "S";
-        else this.direction = "N";
+        this.direction = (this.direction === "N") ? "S" : "N";
     }
 
     sail() {
-        if (!this.exist) return;
-        const poleChecking = (x, y) => {
-            if (y - 1 < 0 || y - 1 >= this.grid.length || x - 1 < 0 || x - 1 >= this.grid[0].length) {
-                console.log(`${this.name} pozostał w miejscu, ponieważ znalazłby się poza planszą`);
-            } else if (this.grid[y - 1][x - 1].type === "LAND") {
-                console.log(`${this.name} pozostał w miejscu, ponieważ trafił na pole, na które nie może wpłynąć (${this.grid[y - 1][x - 1].type})`);
-            } else if (ships.some((elem) => elem.x === x && elem.y === y && elem !== this)) {
-                console.log(`${this.name} pozostał w miejscu, ponieważ wpłynąłby na inny statek`);
-            } else {
-                console.log(`${this.name} się poruszył`);
-                this.x = x;
-                this.y = y;
-            }
-        };
-
-        if (this.direction === "N") poleChecking(this.x, this.y - 1);
-        else poleChecking(this.x, this.y + 1);
+        super.sail(true);
     }
-
 }
 
-// const myTile = new Tile(1, 5, itemType);
-// myTile.getTileInfo();
 
+const myGrid = new Grid();
+myGrid.generate(6, 6);
 
-const myGrid = new Grid(4, 4);
-// myGrid.generate();
+// const predefTiles = [
+//     new Tile(2, 1, "WATER"),
+//     new Tile(2, 2, "WATER"),
+//     new Tile(3, 3, "ICE")
 
-const predefTiles = [
-    new Tile(2, 1, "WATER"),
-    new Tile(2, 2, "WATER")
-    // new Tile(5, 5, "ICE")
-  ];
-myGrid.generatePredefined(predefTiles);
+//     // new Tile(5, 5, "ICE")
+//   ];
+// myGrid.generatePredefined(6, 6, predefTiles);
+console.log(myGrid.printGrid(), "\n");
+// console.log(myGrid.getTile(2, 2));
 
-const ship = new Ship(2, 1, "N", myGrid.grid, "Statek piracki");
-const ship3 = new Ship(2, 3, "N", myGrid.grid, "Okręt podwodny");
-const iceBreaker = new IcebreakerShip(4, 3, myGrid.grid, "Lodołamacz");
+const ship = new Ship(2, 1, "N", myGrid.grid, "Pirate's Ship");
+const ship2 = new IcebreakerShip(3, 3, myGrid.grid, "TheIcebreaker");
+const ship3 = new Ship(2, 3, "N", myGrid.grid, "U-Boot");
 
-// const ship2 = new Ship(1, 2, "N", myGrid.grid); // błąd
 ship3.sail();
+ship2.sail();
 ship.sail();
-iceBreaker.turn();
 
-
-ship3.getShipInfo();
-ship.getShipInfo();
+console.log(myGrid.printGrid(), "\n");
+// ship3.getShipInfo();
+// ship.getShipInfo();
 
 
 // myGrid.getTile(1, 2).getTileInfo(); // 2,2 WATER
