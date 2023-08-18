@@ -14,10 +14,12 @@
     "1_obj": "nodemon src/objects/1_obj.js",
     "2_obj": "nodemon src/objects/2_obj.js",
     "3_obj": "nodemon src/objects/3_obj.js",
+    "1_asyn": "nodemon src/asynchrony/1_asyn.js",
     "test": "nodemon src/objects/test.js",
     "eslint": "eslint '**/*.js'"
   },
   "dependencies": {
+    "axios": "^1.4.0",
     "lodash": "^4.17.21"
   }
 }
