@@ -1,5 +1,7 @@
 // Zdefiniuj:
 
+const { split } = require("lodash");
+
 // konstruktor klasy Vector2 posiadający:
 //     pola x i y
 //     funkcje
@@ -61,8 +63,8 @@ class Ship {
         this.faction = faction;
         this.position = position;
         if (!(this.position instanceof Vector)) throw new Error(`Variable "position" is not instance of class {Vector} in ship ${this.name}`);
-        (typeof strength === Number && strength > 0) ? this.strength = strength : this.strength = 0;
-        (typeof health === Number && health > 0) ? this.health = health : this.health = 0;
+        (typeof strength === "number" && strength > 0) ? this.strength = strength : this.strength = 0;
+        (typeof health === "number" && health > 0) ? this.health = health : this.health = 0;
         this.destroyed = false;
     }
 
@@ -103,12 +105,7 @@ class Ship {
 
 class RebelShip extends Ship {
     constructor(name, position, strength, health) {
-        this.name = name;
-        this.faction = 'Rebel Alliance'
-        this.position = position;
-        if (!(this.position instanceof Vector) || this.position !== undefined) throw new Error(`Variable "position" is not instance of class {Vector} in ship ${this.name}`);
-        (typeof strength === Number && strength > 0) ? this.strength = strength : this.strength = 0;
-        (typeof health === Number && health > 0) ? this.health = health : this.health = 0;
+        super(name,'Rebel Alliance', position, strength, health);
     }
 
     hyperSpeed() {
@@ -117,4 +114,34 @@ class RebelShip extends Ship {
 
 }
 
-const ship = new Ship("a", "b", new Vector(1, 1), 1, 1);
+class DeathStar extends Ship {
+    constructor(name, position, health) {
+        super(name, 'Empire', position, 100, health);
+        this.deathRayAvaible = true;
+    }
+
+    makeDamage(enemyShip) {
+        if (this.deathRayAvaible) {
+            this.deathRayAvaible = false;
+            super.makeDamage(enemyShip);
+            setTimeout(() => this.deathRayAvaible = true, 10000);
+            console.log(`Death ray was used to destroy ${enemyShip.name}`);
+        } else console.log(`Death ray is now charging and need a time to be used`);
+    }
+}
+
+const louis = new Ship("St. Louis", "USA", new Vector(2, 1), 3, 5);
+const fuso = new Ship("Fuso", "Japan", new Vector(3, 4), 6, 6);
+const u238 = new Ship("U-238", "Japan", new Vector(5, 3), 12, 5);
+const izumo = new Ship("Izumo", "Japan", new Vector(5, 5), 8, 15);
+const montana = new RebelShip("Montana", new Vector(1, 1), 18, 15);
+const yamato = new RebelShip("Yamato", new Vector(4, 3), 25, 27);
+const minotaur = new RebelShip("Minotaur", new Vector(1, 2), 20, 30);
+const enterprise = new DeathStar("USS Enterprise", new Vector(2, 2));
+
+louis.checkHealth();
+fuso.makeDamage(montana);
+enterprise.makeDamage(izumo);
+yamato.getDistance(minotaur)
+u238.makeDamage(louis);
+

@@ -18,6 +18,7 @@
     "2_asyn": "nodemon src/asynchrony/2_asyn.js",
     "2B_asyn": "nodemon src/asynchrony/2B_asyn.js",
     "3_asyn": "nodemon src/asynchrony/3_asyn.js",
+    "4_asyn": "nodemon src/asynchrony/4_asyn.js",
     "test": "nodemon src/objects/test.js",
     "eslint": "eslint '**/*.js'"
   },
